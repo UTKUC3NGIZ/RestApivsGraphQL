@@ -6,6 +6,8 @@ import {
   AiOutlineClose,
   AiOutlinePlus,
 } from "react-icons/ai";
+import { IoIosSettings } from "react-icons/io";
+
 import { toast } from "react-hot-toast";
 import { auth, addTodo } from "../firebase";
 import {
@@ -42,8 +44,6 @@ function App(props) {
         value: newTask,
         completed: false,
         time: todoAddDate,
-        uid: props.users.uid,
-        img: props.userData.img,
       });
       setNewTask("");
       setaddButton(false);
@@ -136,7 +136,6 @@ function App(props) {
     updateDoc(docRef, {
       value: edit.value,
       time: todoAddDate,
-      img: props.userData.img,
     });
 
     setModal(false);
@@ -235,11 +234,7 @@ function App(props) {
                       <AiOutlineDelete className="text-cyan-400" />
                     </button>
 
-                    <img
-                      src={task.img}
-                      alt=""
-                      className="w-14 group rounded-full"
-                    />
+                    <IoIosSettings className="text-cyan-400 text-3xl" />
                   </div>
                 </div>
               );
