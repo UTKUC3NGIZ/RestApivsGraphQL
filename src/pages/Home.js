@@ -20,6 +20,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { Switch } from "@headlessui/react";
 
 export const ThemeContext = createContext("null ");
 
@@ -29,6 +30,7 @@ function App(props) {
   const [modal, setModal] = useState(false);
   const [edit, setEdit] = useState([]);
   const [addButton, setaddButton] = useState(false);
+  const [enabled, setEnabled] = useState(false);
 
   /* date */
   const today = new Date();
@@ -175,6 +177,23 @@ function App(props) {
           >
             {/* Title */}
             <h1 className="text-2xl text-white">{formattedDate}</h1>
+            <div className="flex gap-2 text-center items-center">
+              <h2 className="text-xl text-white">Rest Api</h2>
+              <Switch
+                checked={enabled}
+                onChange={setEnabled}
+                className={`${enabled ? "bg-cyan-800" : "bg-cyan-400"}
+          relative inline-flex h-[38px] w-[74px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75`}
+              >
+                <span className="sr-only">Use setting</span>
+                <span
+                  aria-hidden="true"
+                  className={`${enabled ? "translate-x-9" : "translate-x-0"}
+            pointer-events-none inline-block h-[34px] w-[34px] transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out`}
+                />
+              </Switch>
+              <h2 className="text-xl text-white">GraphQL</h2>
+            </div>
           </div>
 
           {/* lists of the entered tasks */}
