@@ -8,19 +8,8 @@ import {
 } from "react-icons/ai";
 import { IoIosSettings } from "react-icons/io";
 
-import { toast } from "react-hot-toast";
-import { auth, addTodo } from "../firebase";
-import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  deleteDoc,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "../firebase";
 import { Switch } from "@headlessui/react";
+import axios from "axios";
 
 export const ThemeContext = createContext("null ");
 
@@ -28,133 +17,77 @@ function App(props) {
   const [newTask, setNewTask] = useState("");
   const [tasks, setTasks] = useState([]);
   const [modal, setModal] = useState(false);
-  const [edit, setEdit] = useState([]);
+  const [edit, setEdit] = useState({});
   const [addButton, setaddButton] = useState(false);
   const [enabled, setEnabled] = useState(false);
-
-  /* date */
-  const today = new Date();
-  const dateOptions = { year: "numeric", month: "long", day: "numeric" };
-  const formattedDate = today.toLocaleDateString(undefined, dateOptions);
-  const timeOptions = { hour: "2-digit", minute: "2-digit" };
-  const todoAddDate = today.toLocaleTimeString([], timeOptions);
-  /* add task function*/
-  const addTask = async (e) => {
-    e.preventDefault();
-    if (newTask.length !== 0) {
-      await addTodo({
-        value: newTask,
-        completed: false,
-        time: todoAddDate,
-      });
-      setNewTask("");
-      setaddButton(false);
-      toast.success("Task Added!", {
-        style: {
-          background: props.theme ? "#2e4155" : "#fff",
-          color: props.theme ? "#fff" : "#00ebfb",
-        },
-      });
-    } else {
-      toast("don't be idle!", {
-        icon: "😡",
-        style: {
-          background: props.theme ? "#2e4155" : "#fff",
-          color: props.theme ? "#fff" : "#00ebfb",
-        },
-      });
+  console.log(edit);
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+  console.log(modal);
+  // Rest Api
+  const fetchTasks = async () => {
+    try {
+      const response = await axios.get(
+        "https://todoapp-7ttl.onrender.com/api/todo/getall"
+      );
+      setTasks(response.data);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
     }
   };
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const q = query(collection(db, "todos"), orderBy("time"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const data = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setTasks(data);
-        });
-        return unsubscribe;
-      } catch (error) {
-        console.log("Error fetching tasks:", error);
-      }
-    };
-
-    fetchTasks();
-  }, []);
-  /* delete task function, parameter: id */
-  function deleteTask(id) {
-    /* we add the new array all the tasks whose id's are different*/
-    const docRef = doc(db, "todos", id);
-    deleteDoc(docRef);
-    toast("Task Deleted!", {
-      icon: "🗑️",
-      style: {
-        background: props.theme ? "#2e4155" : "#fff",
-        color: props.theme ? "#fff" : "#00ebfb",
-      },
-    });
-  }
-  /* complete a task */
-  function completedTasks(task) {
-    const docRef = doc(db, "todos", task.id);
-    updateDoc(docRef, { completed: !task.completed });
-
-    if (task.completed !== true) {
-      toast("it's over finally!", {
-        icon: "🏌️",
-        style: {
-          background: props.theme ? "#2e4155" : "#fff",
-          color: props.theme ? "#fff" : "#00ebfb",
-        },
-      });
-    } else {
-      toast("turn back o7!", {
-        icon: "🧑‍💼",
-        style: {
-          background: props.theme ? "#2e4155" : "#fff",
-          color: props.theme ? "#fff" : "#00ebfb",
-        },
-      });
-    }
-  }
-  /* Modal */
-  function modalBtn(task) {
-    setModal(!modal);
-    setEdit(task);
-  }
-  /* editing existing tasks */
-  function editTask(e) {
-    setEdit({ ...edit, value: e });
-  }
-  /* edit existing tasks */
-  function change(e) {
+  const addTask = async (e) => {
     e.preventDefault();
-    const updateTask = tasks.map((task) => (task.id === edit.id ? edit : task));
-    const docRef = doc(db, "todos", updateTask[0].id);
-    updateDoc(docRef, {
-      value: edit.value,
-      time: todoAddDate,
-    });
+    try {
+      await axios.post("https://todoapp-7ttl.onrender.com/api/todo/create", {
+        title: newTask,
+        done: false,
+      });
+      setNewTask("");
+      fetchTasks();
+    } catch (error) {
+      console.error("Error adding task:", error);
+    }
+  };
 
-    setModal(false);
+  const editTask = async (id, title, done) => {
+    try {
+      await axios.put(`https://todoapp-7ttl.onrender.com/api/todo/update`, {
+        id: id,
+        title: title,
+        done: done,
+      });
+      setModal(false);
+      fetchTasks();
+    } catch (error) {
+      console.error("Error updating task:", error);
+    }
+  };
 
-    toast("Task Updated!", {
-      icon: "✏️",
-      style: {
-        background: props.theme ? "#2e4155" : "#fff",
-        color: props.theme ? "#fff" : "#00ebfb",
-      },
-    });
-  }
+  const deleteTask = async (id) => {
+    try {
+      await axios.delete(`https://todoapp-7ttl.onrender.com/api/todo/delete`, {
+        params: {
+          toDoItem: id,
+        },
+      });
+      fetchTasks();
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  };
 
-  /* add button */
-  function plusButton() {
-    setaddButton(true);
-  }
+  // GraphQL
+
+  const modalBtn = (task) => {
+    setEdit(task);
+    setModal(true);
+  };
+
+  const plusButton = () => {
+    setaddButton(!addButton);
+  };
 
   return (
     <div
@@ -176,7 +109,6 @@ function App(props) {
             }`}
           >
             {/* Title */}
-            <h1 className="text-2xl text-white">{formattedDate}</h1>
             <div className="flex gap-2 text-center items-center">
               <h2 className="text-xl text-white">Rest Api</h2>
               <Switch
@@ -199,10 +131,10 @@ function App(props) {
           {/* lists of the entered tasks */}
 
           <div className="flex flex-col z-20">
-            {tasks.map((task) => {
+            {tasks.map((task, index) => {
               return (
                 <div
-                  key={task.id}
+                  key={index}
                   className={` flex relative hover:scale-110 hover:z-10 last:rounded-b-xl lg:pl-10 border-l-8 border-transparent  items-center mb-1 justify-between shadow-xl   py-5 lg:px-10 px-5  ${
                     props.theme
                       ? "hover:border-slate-600   shadow-slate-800 bg-slate-700"
@@ -211,18 +143,24 @@ function App(props) {
                 >
                   <div>
                     <div className="flex flex-col ">
-                      <span className="text-gray-400 text-xl ">
-                        {task.time}
-                      </span>
                       <h2
                         className={`${
-                          task.completed ? "line-through text-gray-300" : ""
+                          task.done ? "line-through text-gray-300" : ""
+                        }  ${
+                          props.theme ? "text-white" : ""
+                        } text-2xl font-bold text-gray-600`}
+                      >
+                        {task.title}
+                      </h2>
+                      <p
+                        className={`${
+                          task.done ? "line-through text-gray-300" : ""
                         }  ${
                           props.theme ? "text-white" : ""
                         } text-xl text-gray-600`}
                       >
-                        {task.value}
-                      </h2>
+                        {task.description}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center group ">
@@ -237,7 +175,7 @@ function App(props) {
                     <span className="absolute w-20 h-20 right-9 "></span>
 
                     <button
-                      onClick={() => completedTasks(task)}
+                      onClick={() => editTask(task.id, task.title, task.done)}
                       className={`absolute text-lg p-3 border-2 border-transparent shadow-lg rounded-full -top-8  hidden group-hover:!flex  hover:scale-110  ${
                         props.theme ? "bg-slate-600" : "bg-white"
                       }`}
@@ -277,8 +215,8 @@ function App(props) {
                 <input
                   type="text"
                   placeholder="Enter a new task!"
-                  value={newTask}
                   onChange={(e) => setNewTask(e.target.value)}
+                  value={newTask}
                   className={`border-2 rounded-2xl border-transparent pr-16 shadow-lg py-2 px-4 text-xl font-bold outline-none w-full ${
                     addButton ? "animate-opacity" : ""
                   } ${props.theme ? "bg-slate-700 text-white" : ""}`}
@@ -319,15 +257,17 @@ function App(props) {
           </h2>
           <div className="flex items-center sm:justify-center justify-between flex-col sm:flex-row">
             <span className="text-xl font-bold sm:mr-2 line-through text-gray-300 max-w-xs overflow-hidden">
-              {edit.value}
+              {edit.title}
             </span>
             <span className="text-xl font-bold text-cyan-300">=</span>
             <div className="relative flex">
-              <form>
+              <form onSubmit={(e) => e.preventDefault()}>
                 <input
                   type="text"
-                  value={edit.value}
-                  onChange={(e) => editTask(e.target.value)}
+                  value={edit.title}
+                  onChange={(e) => {
+                    setEdit({ ...edit, title: e.target.value });
+                  }}
                   placeholder="Update the task!"
                   className={`border-2 ml-2 rounded-2xl border-transparent shadow-lg py-2 sm:px-4 pl-2 sm:pr-24 pr-24  text-xl font-bold text-gray-600 placeholder:w-2 ${
                     props.theme
@@ -336,7 +276,8 @@ function App(props) {
                   }`}
                 />
                 <button
-                  onClick={(e) => change(e)}
+                  type="submit"
+                  onClick={() => editTask(edit.id, edit.title, edit.done)}
                   className="absolute text-xl right-4 pl-2 h-full rounded-2xl text-cyan-300 hover:text-cyan-500"
                 >
                   Change
