@@ -14,12 +14,16 @@ import axios from "axios";
 export const ThemeContext = createContext("null ");
 
 function App(props) {
+  const restApiBaseUrl = "https://todoapp-7ttl.onrender.com/api/todo";
+  const graphqlBaseUrl = "https://todoapp-7ttl.onrender.com/graphql";
+
   const [newTask, setNewTask] = useState("");
   const [tasks, setTasks] = useState([]);
   const [modal, setModal] = useState(false);
   const [edit, setEdit] = useState({});
   const [addButton, setaddButton] = useState(false);
   const [enabled, setEnabled] = useState(false);
+
   useEffect(() => {
     fetchTasks();
   }, []);
@@ -27,15 +31,11 @@ function App(props) {
   const fetchTasks = async () => {
     try {
       if (enabled) {
-        const response = await axios.get(
-          "https://todoapp-7ttl.onrender.com/api/todo/getall"
-        );
+        const response = await axios.get(`${restApiBaseUrl}/getall`);
         setTasks(response.data);
       } else {
-        const response = await axios.post(
-          "https://todoapp-7ttl.onrender.com/graphql",
-          {
-            query: `
+        const response = await axios.post(`${graphqlBaseUrl}`, {
+          query: `
             query {
               findAll {
                 id
@@ -44,8 +44,7 @@ function App(props) {
               }
             }
           `,
-          }
-        );
+        });
         setTasks(response.data.data.findAll);
       }
     } catch (error) {
@@ -57,12 +56,12 @@ function App(props) {
     e.preventDefault();
     try {
       if (enabled) {
-        await axios.post("https://todoapp-7ttl.onrender.com/api/todo/create", {
+        await axios.post(`${restApiBaseUrl}/create`, {
           title: newTask,
           done: false,
         });
       } else {
-        await axios.post("https://todoapp-7ttl.onrender.com/graphql", {
+        await axios.post(`${graphqlBaseUrl}`, {
           query: `
             mutation {
               create(
@@ -87,16 +86,14 @@ function App(props) {
   const editTask = async (id, title, done) => {
     try {
       if (enabled) {
-        await axios.put(`https://todoapp-7ttl.onrender.com/api/todo/update`, {
+        await axios.put(`${restApiBaseUrl}/update`, {
           id: id,
           title: title,
           done: done,
         });
       } else {
-        await axios.post(
-          "https://todoapp-7ttl.onrender.com/graphql", // GraphQL endpoint URL
-          {
-            query: `
+        await axios.post(`${graphqlBaseUrl}`, {
+          query: `
       mutation {
         update(
           id: ${id},
@@ -109,8 +106,7 @@ function App(props) {
         }
       }
     `,
-          }
-        );
+        });
       }
       setModal(false);
       fetchTasks();
@@ -122,16 +118,13 @@ function App(props) {
   const deleteTask = async (id) => {
     try {
       if (enabled) {
-        await axios.delete(
-          `https://todoapp-7ttl.onrender.com/api/todo/delete`,
-          {
-            params: {
-              toDoItem: id,
-            },
-          }
-        );
+        await axios.delete(`${restApiBaseUrl}/delete`, {
+          params: {
+            toDoItem: id,
+          },
+        });
       } else {
-        await axios.post("https://todoapp-7ttl.onrender.com/graphql", {
+        await axios.post(`${graphqlBaseUrl}`, {
           query: `
             mutation {
               delete(
@@ -326,10 +319,6 @@ function App(props) {
             Edit Todo
           </h2>
           <div className="flex items-center sm:justify-center justify-between flex-col sm:flex-row">
-            <span className="text-xl font-bold sm:mr-2 line-through text-gray-300 max-w-xs overflow-hidden">
-              {edit.title}
-            </span>
-            <span className="text-xl font-bold text-cyan-300">=</span>
             <div className="relative flex">
               <form onSubmit={(e) => e.preventDefault()}>
                 <input
