@@ -20,18 +20,34 @@ function App(props) {
   const [edit, setEdit] = useState({});
   const [addButton, setaddButton] = useState(false);
   const [enabled, setEnabled] = useState(false);
-  console.log(edit);
   useEffect(() => {
     fetchTasks();
   }, []);
-  console.log(modal);
   // Rest Api
   const fetchTasks = async () => {
     try {
-      const response = await axios.get(
-        "https://todoapp-7ttl.onrender.com/api/todo/getall"
-      );
-      setTasks(response.data);
+      if (enabled) {
+        const response = await axios.get(
+          "https://todoapp-7ttl.onrender.com/api/todo/getall"
+        );
+        setTasks(response.data);
+      } else {
+        const response = await axios.post(
+          "https://todoapp-7ttl.onrender.com/graphql",
+          {
+            query: `
+            query {
+              findAll {
+                id
+                title
+                done
+              }
+            }
+          `,
+          }
+        );
+        setTasks(response.data.data.findAll);
+      }
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
@@ -40,10 +56,27 @@ function App(props) {
   const addTask = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("https://todoapp-7ttl.onrender.com/api/todo/create", {
-        title: newTask,
-        done: false,
-      });
+      if (enabled) {
+        await axios.post("https://todoapp-7ttl.onrender.com/api/todo/create", {
+          title: newTask,
+          done: false,
+        });
+      } else {
+        await axios.post("https://todoapp-7ttl.onrender.com/graphql", {
+          query: `
+            mutation {
+              create(
+                title: "${newTask}",
+                done: false
+              ) {
+                id
+                title
+                done
+              }
+            }
+          `,
+        });
+      }
       setNewTask("");
       fetchTasks();
     } catch (error) {
@@ -53,11 +86,32 @@ function App(props) {
 
   const editTask = async (id, title, done) => {
     try {
-      await axios.put(`https://todoapp-7ttl.onrender.com/api/todo/update`, {
-        id: id,
-        title: title,
-        done: done,
-      });
+      if (enabled) {
+        await axios.put(`https://todoapp-7ttl.onrender.com/api/todo/update`, {
+          id: id,
+          title: title,
+          done: done,
+        });
+      } else {
+        await axios.post(
+          "https://todoapp-7ttl.onrender.com/graphql", // GraphQL endpoint URL
+          {
+            query: `
+      mutation {
+        update(
+          id: ${id},
+          title: "${title}",
+          done: ${done}
+        ) {
+          id
+          title
+          done
+        }
+      }
+    `,
+          }
+        );
+      }
       setModal(false);
       fetchTasks();
     } catch (error) {
@@ -67,11 +121,27 @@ function App(props) {
 
   const deleteTask = async (id) => {
     try {
-      await axios.delete(`https://todoapp-7ttl.onrender.com/api/todo/delete`, {
-        params: {
-          toDoItem: id,
-        },
-      });
+      if (enabled) {
+        await axios.delete(
+          `https://todoapp-7ttl.onrender.com/api/todo/delete`,
+          {
+            params: {
+              toDoItem: id,
+            },
+          }
+        );
+      } else {
+        await axios.post("https://todoapp-7ttl.onrender.com/graphql", {
+          query: `
+            mutation {
+              delete(
+                id: ${id}
+              )
+            }
+          `,
+        });
+      }
+
       fetchTasks();
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -110,7 +180,7 @@ function App(props) {
           >
             {/* Title */}
             <div className="flex gap-2 text-center items-center">
-              <h2 className="text-xl text-white">Rest Api</h2>
+              <h2 className="text-xl text-white">GraphQL</h2>
               <Switch
                 checked={enabled}
                 onChange={setEnabled}
@@ -124,7 +194,7 @@ function App(props) {
             pointer-events-none inline-block h-[34px] w-[34px] transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out`}
                 />
               </Switch>
-              <h2 className="text-xl text-white">GraphQL</h2>
+              <h2 className="text-xl text-white">Rest Api</h2>
             </div>
           </div>
 
@@ -175,7 +245,7 @@ function App(props) {
                     <span className="absolute w-20 h-20 right-9 "></span>
 
                     <button
-                      onClick={() => editTask(task.id, task.title, task.done)}
+                      onClick={() => editTask(task.id, task.title, !task.done)}
                       className={`absolute text-lg p-3 border-2 border-transparent shadow-lg rounded-full -top-8  hidden group-hover:!flex  hover:scale-110  ${
                         props.theme ? "bg-slate-600" : "bg-white"
                       }`}
