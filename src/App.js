@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 import Home from "./pages/Home";
 import { Toaster } from "react-hot-toast";
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route } from "react-router";
 
 function App() {
   const [theme, setTheme] = useState(true);

@@ -20,14 +20,19 @@ function App(props) {
   const [newTask, setNewTask] = useState("");
   const [tasks, setTasks] = useState([]);
   const [modal, setModal] = useState(false);
-  const [edit, setEdit] = useState({});
+  const [edit, setEdit] = useState({ id: "", title: "", done: false });
+
   const [addButton, setaddButton] = useState(false);
   const [enabled, setEnabled] = useState(false);
+
+  /* date */
+  const today = new Date();
+  const dateOptions = { year: "numeric", month: "long", day: "numeric" };
+  const formattedDate = today.toLocaleDateString(undefined, dateOptions);
 
   useEffect(() => {
     fetchTasks();
   }, []);
-  // Rest Api
   const fetchTasks = async () => {
     try {
       if (enabled) {
@@ -116,11 +121,12 @@ function App(props) {
   };
 
   const deleteTask = async (id) => {
+    console.log(id, "deleteTask");
     try {
       if (enabled) {
         await axios.delete(`${restApiBaseUrl}/delete`, {
           params: {
-            toDoItem: id,
+            id: id,
           },
         });
       } else {
@@ -140,8 +146,6 @@ function App(props) {
       console.error("Error deleting task:", error);
     }
   };
-
-  // GraphQL
 
   const modalBtn = (task) => {
     setEdit(task);
@@ -172,6 +176,7 @@ function App(props) {
             }`}
           >
             {/* Title */}
+            <h1 className="text-2xl text-white">{formattedDate}</h1>
             <div className="flex gap-2 text-center items-center">
               <h2 className="text-xl text-white">GraphQL</h2>
               <Switch
@@ -323,7 +328,7 @@ function App(props) {
               <form onSubmit={(e) => e.preventDefault()}>
                 <input
                   type="text"
-                  value={edit.title}
+                  value={edit.title || ""}
                   onChange={(e) => {
                     setEdit({ ...edit, title: e.target.value });
                   }}
